@@ -141,6 +141,8 @@ static void *app_sonde(void *arg)
     }
     sonde_init();
 
+    enum state_r last_state = R_STOP;
+
     /* Boucle principale */
     while (1) {
 	/* Prise de la température */
@@ -153,10 +155,12 @@ static void *app_sonde(void *arg)
 	/* Mise a jour des relais */
 	int tprog; GET_TPROG(&tprog);
 	enum state_r etatr; GET_RSTATE(&etatr);
-	if (tmes > (tprog + TEMPERATURE_MARGE)) {
+	if ((tmes > (tprog + TEMPERATURE_MARGE)) || ((tmes > tprog) && (last_state == R_FROID))) {
 	    update_relais(R_FROID);
-	} else if (tmes < (tprog - TEMPERATURE_MARGE)) {
+	    last_state = R_FROID;
+	} else if ((tmes < (tprog - TEMPERATURE_MARGE)) || ((tmes < tprog) && (last_state == R_CHAUF))) {
 	    update_relais(R_CHAUF);
+	    last_state = R_CHAUF;
 	} else if ((etatr==R_CHAUF && (tmes>=tprog)) || (etatr==R_FROID && (tmes<=tprog))) {
 	    update_relais(R_STOP);
 	}
